@@ -59,7 +59,7 @@ class RateItem
             $data['base'],
             $data['quote'],
             (float)$data['rate'],
-            $data['intermediate'] ?
+            isset($data['intermediate']) ?
                 self::createFromJson($data['intermediate']) :
                 null
         ));
