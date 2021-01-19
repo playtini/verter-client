@@ -68,8 +68,8 @@ class RateItem
     public function jsonSerialize(): array
     {
         return [
-            'set_at' => $this->setAt,
-            'collected_at' => $this->collectedAt,
+            'set_at' => $this->setAt->format('Y-m-d H:i:s'),
+            'collected_at' => $this->collectedAt->format('Y-m-d H:i:s'),
             'channel' => $this->channel,
             'source' => $this->source,
             'base' => $this->base,
