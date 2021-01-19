@@ -17,10 +17,10 @@ class RateClient extends BaseClient
      * @param string $quote
      * @param string $channel
      * @param DateTimeInterface|null $date
-     * @return RateItem
+     * @return RateItem|null
      * @throws Throwable
      */
-    public function getRate(string $base, string $quote, string $channel, ?DateTimeInterface $date = null): RateItem
+    public function getRate(string $base, string $quote, string $channel, ?DateTimeInterface $date = null): ?RateItem
     {
         try {
             $content = $this->sendRequest(self::RATE_PATH, [
@@ -44,7 +44,7 @@ class RateClient extends BaseClient
         }
 
         try {
-            return RateItem::createFromJson($data);
+            return $data ? RateItem::createFromJson($data) : null;
         } catch (Throwable $e) {
             throw new RuntimeException('Wrong object from currency converter');
         }
