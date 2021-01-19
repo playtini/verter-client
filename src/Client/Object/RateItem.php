@@ -4,7 +4,6 @@ namespace VerterClient\Client\Object;
 
 use DateTime;
 use DateTimeInterface;
-use JsonException;
 use Throwable;
 
 class RateItem
@@ -46,15 +45,12 @@ class RateItem
     }
 
     /**
-     * @param string $content
+     * @param array $data
      * @return static
-     * @throws JsonException
      * @throws Throwable
      */
-    public static function createFromJson(string $content): self
+    public static function createFromJson(array $data): self
     {
-        $data = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
-
         return (new self(
             new DateTime($data['set_at']),
             new DateTime($data['collected_at']),
@@ -64,7 +60,7 @@ class RateItem
             $data['quote'],
             (float)$data['rate'],
             $data['intermediate'] ?
-                self::createFromJson(json_encode($data['intermediate'], JSON_THROW_ON_ERROR)) :
+                self::createFromJson($data['intermediate']) :
                 null
         ));
     }
