@@ -60,6 +60,7 @@ class RateItem
                 $intermediates[] = self::createFromJson($inter);
             }
         }
+
         return (new self(
             new DateTime($data['set_at']),
             new DateTime($data['collected_at']),
@@ -80,6 +81,7 @@ class RateItem
                 $intermediates[] = $inter->jsonSerialize();
             }
         }
+
         return [
             'set_at' => $this->setAt->format('Y-m-d H:i:s'),
             'collected_at' => $this->collectedAt->format('Y-m-d H:i:s'),
