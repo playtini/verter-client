@@ -22,7 +22,10 @@ class RateItem
 
     private float $rate;
 
-    private ?RateItem $intermediate;
+    /**
+     * @var array|RateItem[]
+     */
+    private array $intermediate;
 
     private function __construct(
         DateTimeInterface $setAt,
@@ -32,7 +35,7 @@ class RateItem
         string $base,
         string $quote,
         float $rate,
-        ?RateItem $intermediate = null
+        array $intermediate = []
     ){
         $this->setAt = $setAt;
         $this->collectedAt = $collectedAt;
@@ -51,6 +54,12 @@ class RateItem
      */
     public static function createFromJson(array $data): self
     {
+        $intermediates = [];
+        if (isset($data['intermediate'])) {
+            foreach ($data['intermediate'] as $inter) {
+                $intermediates[] = self::createFromJson($inter);
+            }
+        }
         return (new self(
             new DateTime($data['set_at']),
             new DateTime($data['collected_at']),
@@ -59,14 +68,18 @@ class RateItem
             $data['base'],
             $data['quote'],
             (float)$data['rate'],
-            isset($data['intermediate']) ?
-                self::createFromJson($data['intermediate']) :
-                null
+            $intermediates
         ));
     }
 
     public function jsonSerialize(): array
     {
+        $intermediates = [];
+        if ($this->intermediate) {
+            foreach ($this->intermediate as $inter) {
+                $intermediates[] = $inter->jsonSerialize();
+            }
+        }
         return [
             'set_at' => $this->setAt->format('Y-m-d H:i:s'),
             'collected_at' => $this->collectedAt->format('Y-m-d H:i:s'),
@@ -75,7 +88,7 @@ class RateItem
             'base' => $this->base,
             'quote' => $this->quote,
             'rate' => $this->rate,
-            'intermediate' => $this->intermediate ? $this->intermediate->jsonSerialize() : null
+            'intermediate' => $intermediates
         ];
     }
 
@@ -114,7 +127,10 @@ class RateItem
         return $this->rate;
     }
 
-    public function getIntermediate(): ?RateItem
+    /**
+     * @return array|RateItem[]
+     */
+    public function getIntermediate(): array
     {
         return $this->intermediate;
     }
