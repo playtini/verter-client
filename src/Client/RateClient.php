@@ -4,8 +4,8 @@ namespace VerterClient\Client;
 
 use DateTimeInterface;
 use DateTime;
+use VerterClient\Client\Exception\VerterException;
 use VerterClient\Client\Object\RateItem;
-use RuntimeException;
 use Throwable;
 
 class RateClient extends BaseClient
@@ -30,23 +30,15 @@ class RateClient extends BaseClient
                 'date' => $date ? $date->format('Y-m-d H:i:s') : (new DateTime())->format('Y-m-d H:i:s')
             ]);
         } catch (Throwable $e) {
-            throw new RuntimeException('Something went wrong during extraction currency rate');
-        }
-
-        if (!$content) {
-            throw new RuntimeException('Something went wrong during extraction currency rate');
+            throw new VerterException('Something went wrong during extraction currency rate');
         }
 
         try {
             $data = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
         } catch (Throwable $e) {
-            throw new RuntimeException('Wrong object from currency converter');
+            throw new VerterException('Wrong object from currency converter');
         }
 
-        try {
-            return $data ? RateItem::createFromJson($data) : null;
-        } catch (Throwable $e) {
-            throw new RuntimeException('Wrong object from currency converter');
-        }
+        return $data ? RateItem::createFromJson($data) : null;
     }
 }
