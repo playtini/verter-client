@@ -1,3 +1,4 @@
 Verter API Client
+=============
 
-Client for exchange currencies for different channels
+Client for Verter - service to get exchange rates.
