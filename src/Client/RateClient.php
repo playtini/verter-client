@@ -4,7 +4,8 @@ namespace VerterClient\Client;
 
 use DateTimeInterface;
 use DateTime;
-use VerterClient\Client\Exception\VerterException;
+use VerterClient\Client\Exception\VerterFormatException;
+use VerterClient\Client\Exception\VerterTransportException;
 use VerterClient\Client\Object\RateItem;
 use Throwable;
 
@@ -30,13 +31,13 @@ class RateClient extends BaseClient
                 'date' => $date ? $date->format('Y-m-d H:i:s') : (new DateTime())->format('Y-m-d H:i:s')
             ]);
         } catch (Throwable $e) {
-            throw new VerterException('Something went wrong during extraction currency rate');
+            throw new VerterTransportException($e->getMessage());
         }
 
         try {
             $data = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
         } catch (Throwable $e) {
-            throw new VerterException('Wrong object from currency converter');
+            throw new VerterFormatException($e->getMessage());
         }
 
         return $data ? RateItem::createFromJson($data) : null;
