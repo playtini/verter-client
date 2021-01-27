@@ -33,7 +33,7 @@ abstract class BaseClient
         $response = $httpClient->request($method, $path, [
             'headers' => [
                 'X-Api-Key' => $this->apiKey,
-                'Accept'     => 'application/json',
+                'Accept'    => 'application/json',
             ],
             'form_params' => $params
         ]);

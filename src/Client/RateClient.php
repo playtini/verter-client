@@ -31,15 +31,15 @@ class RateClient extends BaseClient
                 'date' => $date ? $date->format('Y-m-d H:i:s') : (new DateTime())->format('Y-m-d H:i:s')
             ]);
         } catch (Throwable $e) {
-            throw new VerterTransportException($e->getMessage());
+            throw new VerterTransportException($e->getMessage(), null, $e);
         }
 
         try {
             $data = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
         } catch (Throwable $e) {
-            throw new VerterFormatException($e->getMessage());
+            throw new VerterFormatException($e->getMessage(), null, $e);
         }
 
-        return $data ? RateItem::createFromJson($data) : null;
+        return ($data['data'] ?? false) ? RateItem::createFromJson($data['data']) : null;
     }
 }
