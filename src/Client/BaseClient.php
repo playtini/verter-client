@@ -11,10 +11,13 @@ abstract class BaseClient
 
     private string $baseUrl;
 
-    public function __construct(string $baseUrl, string $apiKey)
+    private bool $ignoreSslErrors;
+
+    public function __construct(string $baseUrl, string $apiKey, bool $ignoreSslErrors = false)
     {
         $this->baseUrl = $baseUrl;
         $this->apiKey = $apiKey;
+        $this->ignoreSslErrors = $ignoreSslErrors;
     }
 
     /**
@@ -27,7 +30,8 @@ abstract class BaseClient
     protected function sendRequest(string $path, array $params = [], string $method = 'POST'): string
     {
         $httpClient = new Client([
-            'base_uri' => $this->baseUrl
+            'base_uri' => $this->baseUrl,
+            'verify' => !$this->ignoreSslErrors
         ]);
 
         $response = $httpClient->request($method, $path, [
