@@ -51,7 +51,7 @@ abstract class BaseClient
 
         $this->logger->debug(
             'verterclient.request',
-            array_merge(['api_url' => $path, 'duration' => $duration, 'status_code' => $response->getStatusCode()], $params)
+            array_merge(['api_url' => $this->baseUrl . $path, 'duration' => $duration, 'status_code' => $response->getStatusCode()], $params)
         );
 
         return $response->getBody()->getContents();
