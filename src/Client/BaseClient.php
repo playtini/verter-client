@@ -4,6 +4,8 @@ namespace VerterClient\Client;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 abstract class BaseClient
 {
@@ -13,11 +15,14 @@ abstract class BaseClient
 
     private bool $ignoreSslErrors;
 
-    public function __construct(string $baseUrl, string $apiKey, bool $ignoreSslErrors = false)
+    private LoggerInterface $logger;
+
+    public function __construct(string $baseUrl, string $apiKey, bool $ignoreSslErrors = false, LoggerInterface $logger = null)
     {
         $this->baseUrl = $baseUrl;
         $this->apiKey = $apiKey;
         $this->ignoreSslErrors = $ignoreSslErrors;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     /**
@@ -34,6 +39,7 @@ abstract class BaseClient
             'verify' => !$this->ignoreSslErrors
         ]);
 
+        $start = microtime(true);
         $response = $httpClient->request($method, $path, [
             'headers' => [
                 'X-Api-Key' => $this->apiKey,
@@ -41,6 +47,12 @@ abstract class BaseClient
             ],
             'form_params' => $params
         ]);
+        $duration = microtime(true) - $start;
+
+        $this->logger->debug(
+            'verterclient.request',
+            array_merge(['api_url' => $this->baseUrl . $path, 'duration' => $duration, 'status_code' => $response->getStatusCode()], $params)
+        );
 
         return $response->getBody()->getContents();
     }
