@@ -17,8 +17,12 @@ abstract class BaseClient
 
     private LoggerInterface $logger;
 
-    public function __construct(string $baseUrl, string $apiKey, bool $ignoreSslErrors = false, LoggerInterface $logger = null)
-    {
+    public function __construct(
+        string $baseUrl = 'https://verter.info',
+        string $apiKey = '',
+        bool $ignoreSslErrors = false,
+        LoggerInterface $logger = null
+    ) {
         $this->baseUrl = $baseUrl;
         $this->apiKey = $apiKey;
         $this->ignoreSslErrors = $ignoreSslErrors;
@@ -36,22 +40,22 @@ abstract class BaseClient
     {
         $httpClient = new Client([
             'base_uri' => $this->baseUrl,
-            'verify' => !$this->ignoreSslErrors
+            'verify' => !$this->ignoreSslErrors,
         ]);
 
         $start = microtime(true);
         $response = $httpClient->request($method, $path, [
             'headers' => [
                 'X-Api-Key' => $this->apiKey,
-                'Accept'    => 'application/json',
+                'Accept' => 'application/json',
             ],
-            'form_params' => $params
+            'form_params' => $params,
         ]);
         $duration = microtime(true) - $start;
 
         $this->logger->debug(
             'verterclient.request',
-            array_merge(['api_url' => $this->baseUrl . $path, 'duration' => $duration, 'status_code' => $response->getStatusCode()], $params)
+            array_merge(['api_url' => $this->baseUrl.$path, 'duration' => $duration, 'status_code' => $response->getStatusCode()], $params)
         );
 
         return $response->getBody()->getContents();
