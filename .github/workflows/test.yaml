@@ -9,16 +9,11 @@ concurrency:
 
 jobs:
     test:
-        runs-on: ubuntu-20.04
+        runs-on: ubuntu-latest
         steps:
-            -   name: composer cache
-                uses: actions/cache@v2
-                with:
-                    path: /tmp/composer-cache
-                    key: ${{ runner.os }}-${{ hashFiles('**/composer.lock') }}
-
+            -   uses: actions/checkout@v2
             -   name: composer
-                uses: php-actions/composer@v6.0.0
+                uses: php-actions/composer@v6
                 with:
                     dev: yes
                     php_version: '8.1'
@@ -34,11 +29,3 @@ jobs:
                     args: '--coverage-text -dxdebug.mode=coverage'
                     memory_limit: '512M'
                     php_extensions: xdebug mbstring
-
-            -   name: composer
-                uses: php-actions/composer@v6.0.0
-                with:
-                    dev: no
-                    php_version: '8.1'
-                    memory_limit: '512M'
-                    args: '--ignore-platform-reqs --no-ansi --no-scripts --no-progress -o'
