@@ -9,7 +9,7 @@ concurrency:
 
 jobs:
     test:
-        runs-on: self-hosted
+        runs-on: ubuntu
         steps:
             -   name: composer cache
                 uses: actions/cache@v2
