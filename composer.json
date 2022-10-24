@@ -1,27 +1,25 @@
 {
-  "name": "verter/client",
-  "description": "Verter Clients",
-  "type": "library",
-  "license": "proprietary",
-  "minimum-stability": "dev",
-  "prefer-stable": true,
-  "require": {
-    "ext-json": "*",
-    "guzzlehttp/guzzle": "^7.2",
-    "psr/log": "^1.1"
-  },
-  "config": {
-    "preferred-install": {
-      "*": "dist"
+    "name": "verter/client",
+    "description": "Verter Client",
+    "type": "library",
+    "license": "proprietary",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "require": {
+        "php": ">= 7.4.6",
+        "ext-json": "*",
+        "guzzlehttp/guzzle": "^7.2",
+        "psr/log": "^1.1"
     },
-    "platform": {
-      "php": "7.4.6"
+    "config": {
+        "preferred-install": {
+            "*": "dist"
+        },
+        "sort-packages": true
     },
-    "sort-packages": true
-  },
-  "autoload": {
-    "psr-4": {
-      "VerterClient\\": "src/"
+    "autoload": {
+        "psr-4": {
+            "VerterClient\\": "src/"
+        }
     }
-  }
 }
