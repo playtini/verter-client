@@ -32,11 +32,9 @@ abstract class BaseClient
         $this->logger = $logger ?? new NullLogger();
     }
 
-    public function setLogLevel(string $logLevel): self
+    public function setLogLevel(string $logLevel): void
     {
         $this->logLevel = $logLevel;
-
-        return $this;
     }
 
     /**
