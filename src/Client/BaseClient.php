@@ -5,6 +5,7 @@ namespace VerterClient\Client;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
 use Psr\Log\NullLogger;
 
 abstract class BaseClient
@@ -17,6 +18,8 @@ abstract class BaseClient
 
     private LoggerInterface $logger;
 
+    private string $logLevel = LogLevel::DEBUG;
+
     public function __construct(
         string $baseUrl = 'https://verter.info',
         string $apiKey = '',
@@ -27,6 +30,13 @@ abstract class BaseClient
         $this->apiKey = $apiKey;
         $this->ignoreSslErrors = $ignoreSslErrors;
         $this->logger = $logger ?? new NullLogger();
+    }
+
+    public function setLogLevel(string $logLevel): self
+    {
+        $this->logLevel = $logLevel;
+
+        return $this;
     }
 
     /**
@@ -53,11 +63,17 @@ abstract class BaseClient
         ]);
         $duration = microtime(true) - $start;
 
-        $this->logger->debug(
+        $this->log(
             'verterclient.request',
             array_merge(['api_url' => $this->baseUrl.$path, 'duration' => $duration, 'status_code' => $response->getStatusCode()], $params)
         );
 
         return $response->getBody()->getContents();
+    }
+
+    /** @param string|\Stringable $message */
+    protected function log($message, array $context = []): void
+    {
+        $this->logger->log($this->logLevel, $message, $context);
     }
 }

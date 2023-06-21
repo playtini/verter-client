@@ -31,12 +31,16 @@ class RateClient extends BaseClient
                 'date' => $date ? $date->format('Y-m-d H:i:s') : (new DateTime())->format('Y-m-d H:i:s')
             ]);
         } catch (Throwable $e) {
+            $this->log('verterclient.error.client', ['base' => $base, 'quote' => $quote, 'channel' => $channel, 'message' => $e->getMessage()]);
+
             throw new VerterTransportException($e->getMessage(), 0, $e);
         }
 
         try {
             $data = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
         } catch (Throwable $e) {
+            $this->log('verterclient.error.json', ['base' => $base, 'quote' => $quote, 'channel' => $channel, 'message' => $e->getMessage(), 'content' => mb_substr($content, 0, 1000)]);
+
             throw new VerterFormatException($e->getMessage(), 0, $e);
         }
 
