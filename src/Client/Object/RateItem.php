@@ -2,86 +2,76 @@
 
 namespace VerterClient\Client\Object;
 
-use DateTime;
+use DateTimeImmutable;
 use DateTimeInterface;
-use Throwable;
+use JsonSerializable;
 
-class RateItem
+readonly class RateItem implements JsonSerializable
 {
-    private DateTimeInterface $setAt;
-
-    private DateTimeInterface $collectedAt;
-
-    private string $channel;
-
-    private string $source;
-
-    private string $base;
-
-    private string $quote;
-
-    private float $rate;
-
     /**
-     * @var array|RateItem[]
+     * @param array<RateItem> $intermediate
      */
-    private array $intermediate;
-
     private function __construct(
-        DateTimeInterface $setAt,
-        DateTimeInterface $collectedAt,
-        string $channel,
-        string $source,
-        string $base,
-        string $quote,
-        float $rate,
-        array $intermediate = []
-    ){
-        $this->setAt = $setAt;
-        $this->collectedAt = $collectedAt;
-        $this->channel = $channel;
-        $this->source = $source;
-        $this->base = $base;
-        $this->quote = $quote;
-        $this->rate = $rate;
-        $this->intermediate = $intermediate;
+        private DateTimeInterface $setAt,
+        private DateTimeInterface $collectedAt,
+        private string $channel,
+        private string $source,
+        private string $base,
+        private string $quote,
+        private float $rate,
+        private array $intermediate = [],
+    ) {
     }
 
     /**
-     * @param array $data
-     * @return static
-     * @throws Throwable
+     * @param array{
+     *     set_at: string,
+     *     collected_at: string,
+     *     channel: string,
+     *     source: string,
+     *     base: string,
+     *     quote: string,
+     *     rate: float|int|string,
+     *     intermediate?: array<array<string, mixed>>
+     * } $data
+     * @throws \DateMalformedStringException
      */
     public static function createFromJson(array $data): self
     {
         $intermediates = [];
         if (isset($data['intermediate'])) {
             foreach ($data['intermediate'] as $inter) {
+                /** @var array{set_at: string, collected_at: string, channel: string, source: string, base: string, quote: string, rate: float|int|string, intermediate?: array<array<string, mixed>>} $inter */
                 $intermediates[] = self::createFromJson($inter);
             }
         }
 
-        return (new self(
-            new DateTime($data['set_at']),
-            new DateTime($data['collected_at']),
+        return new self(
+            new DateTimeImmutable($data['set_at']),
+            new DateTimeImmutable($data['collected_at']),
             $data['channel'],
             $data['source'],
             $data['base'],
             $data['quote'],
-            (float)$data['rate'],
-            $intermediates
-        ));
+            (float) $data['rate'],
+            $intermediates,
+        );
     }
 
+    /**
+     * @return array{
+     *     set_at: string,
+     *     collected_at: string,
+     *     channel: string,
+     *     source: string,
+     *     base: string,
+     *     quote: string,
+     *     rate: float,
+     *     intermediate: array<array<string, mixed>>
+     * }
+     */
     public function jsonSerialize(): array
     {
-        $intermediates = [];
-        if ($this->intermediate) {
-            foreach ($this->intermediate as $inter) {
-                $intermediates[] = $inter->jsonSerialize();
-            }
-        }
-
         return [
             'set_at' => $this->setAt->format('Y-m-d H:i:s'),
             'collected_at' => $this->collectedAt->format('Y-m-d H:i:s'),
@@ -90,7 +80,10 @@ class RateItem
             'base' => $this->base,
             'quote' => $this->quote,
             'rate' => $this->rate,
-            'intermediate' => $intermediates
+            'intermediate' => array_map(
+                static fn(RateItem $item) => $item->jsonSerialize(),
+                $this->intermediate,
+            ),
         ];
     }
 
@@ -130,7 +123,7 @@ class RateItem
     }
 
     /**
-     * @return array|RateItem[]
+     * @return array<RateItem>
      */
     public function getIntermediate(): array
     {

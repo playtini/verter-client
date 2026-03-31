@@ -11,21 +11,26 @@ jobs:
     test:
         runs-on: ubuntu-latest
         steps:
-            -   uses: actions/checkout@v2
+            -   uses: actions/checkout@v6
             -   name: composer
                 uses: php-actions/composer@v6
                 with:
                     dev: yes
-                    php_version: '8.1'
+                    php_version: '8.4'
                     memory_limit: 512M
-                    args: '--ignore-platform-reqs --no-ansi --no-scripts --no-progress -o'
+                    args: '--no-ansi --no-scripts --no-progress -o'
+
+            -   name: phpstan
+                uses: php-actions/phpstan@v3
+                with:
+                    php_version: '8.4'
+                    configuration: phpstan.dist.neon
+                    memory_limit: 512M
 
             -   name: phpunit
-                uses: php-actions/phpunit@v3
+                uses: php-actions/phpunit@v4
                 with:
-                    version: '9.5'
-                    php_version: '8.1'
+                    php_version: '8.4'
                     configuration: phpunit.xml.dist
-                    args: '--coverage-text -dxdebug.mode=coverage'
                     memory_limit: '512M'
-                    php_extensions: xdebug mbstring
+                    php_extensions: mbstring
