@@ -2,3 +2,19 @@
 /vendor/
 .phpunit.result.cache
 composer.lock
+
+# branch-tasks tooling — dropped in locally by `make bundle-tools BUNDLE=verter-client` from the
+# sibling ../infrastructure checkout (see its bin/gen-bundle-tooling), never committed here:
+# this is a library with no deploy pipeline/CI of its own beyond the existing build/test
+# workflows, and nobody but the developer who pulled it ever looks at BRANCH_TASKS.md
+# (markdown, not HTML like the app-services — opens straight in the editor). Re-run that
+# command any time these are missing or you want the latest version of the script.
+# (.github/workflows/branch-tasks.yml is the opposite — committed on purpose, see that file's
+# own header.)
+/branch-tasks.sh
+/Makefile
+/BRANCH_TASKS.md
+
+# Personal Makefile variable overrides (e.g. MAIN_BRANCH/TICKET_REGEX for branch-tasks).
+# Auto-picked up via -include in the generated Makefile.
+/Makefile.local

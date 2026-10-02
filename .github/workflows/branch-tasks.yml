@@ -1,0 +1,159 @@
+name: Branch tasks
+
+# Manually-triggered: click "Run workflow" in the Actions tab, pick the branch to run from (or
+# override it below), and get a tickets/branches table right in this run's summary — no local
+# clone needed. This is a library (playtini/infrastructure's Bundles — no deploy pipeline of
+# its own), so unlike the app-services' branch-tasks.yml, nothing gets committed back; the
+# script itself is embedded here rather than checked into the repo (see
+# playtini/infrastructure's bin/branch-tasks.sh, the canonical source — keep this in sync with
+# it by hand if that script changes) since Bundles deliberately don't commit a local copy of
+# it (opens as a plain markdown file via `make bundle-tools` instead, see infrastructure's
+# README "Bundles (пакети)" section).
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to show tasks for (leave empty to use the branch you ran this from)'
+        required: false
+        type: string
+      main_branch:
+        description: 'Branch to compare against'
+        required: false
+        default: main
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  branch-tasks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch both branches
+        env:
+          MAIN_BRANCH: ${{ inputs.main_branch }}
+          TARGET_BRANCH: ${{ inputs.branch || github.ref_name }}
+        run: git fetch origin "$MAIN_BRANCH" "$TARGET_BRANCH"
+
+      - name: Generate branch tasks
+        env:
+          MAIN_BRANCH: ${{ inputs.main_branch }}
+          TARGET_BRANCH: ${{ inputs.branch || github.ref_name }}
+          # VSTK is playtini's shared Jira project prefix across the Vostok-family repos this
+          # was written for — override here if this bundle uses a different one.
+          TICKET_REGEX: '[Vv][Ss][Tt][Kk][[:space:]-][0-9]{4,5}'
+        run: |
+          set -euo pipefail
+
+          extract_ticket() {
+              local text="$1"
+              if [[ $text =~ $TICKET_REGEX ]]; then
+                  echo "$text" | grep -ioE "$TICKET_REGEX" | head -1 | tr '[:lower:]' '[:upper:]' | tr ' ' '-'
+              else
+                  echo "-"
+              fi
+          }
+
+          md_escape() {
+              local s="$1"
+              s="${s//\\/\\\\}"
+              s="${s//|/\\|}"
+              printf '%s' "$s"
+          }
+
+          declare -A max_date
+          declare -A branch_of
+          declare -A titles
+          declare -A seen_title
+          order=()
+
+          # Both sides read from origin/ explicitly (not a bare branch name) - unlike the local
+          # bin/branch-tasks.sh, there's no "uncommitted local branch" concept in CI, everything
+          # comes from the fetch above.
+          while IFS= read -r hash; do
+              subject=$(git log -1 --format='%s' "$hash")
+              commit_date=$(git log -1 --format='%cd' --date=short "$hash")
+
+              if [[ $subject =~ Merge\ pull\ request\ \#([0-9]+)\ from\ [^/]+/(.+)$ ]]; then
+                  branch="${BASH_REMATCH[2]}"
+                  title=$(git log -1 --format='%b' "$hash" | sed '/^[[:space:]]*$/d' | head -1)
+                  [ -z "$title" ] && title="$subject"
+              else
+                  branch="${TARGET_BRANCH}"
+                  title="$subject"
+              fi
+
+              ticket=$(extract_ticket "$branch")
+              if [ "$ticket" = "-" ]; then
+                  ticket=$(extract_ticket "$title")
+              fi
+              if [ "$ticket" = "-" ]; then
+                  ticket=$(extract_ticket "$TARGET_BRANCH")
+              fi
+
+              key="${ticket}"$'\x1f'"${branch}"
+              if [[ -z "${max_date[$key]:-}" || "$commit_date" > "${max_date[$key]}" ]]; then
+                  max_date[$key]="$commit_date"
+              fi
+              if [[ -z "${branch_of[$key]:-}" ]]; then
+                  branch_of[$key]="$branch"
+                  order+=("$key")
+              fi
+
+              title_key="$key"$'\x1e'"$title"
+              if [[ -z "${seen_title[$title_key]:-}" ]]; then
+                  seen_title[$title_key]=1
+                  if [[ -z "${titles[$key]:-}" ]]; then
+                      titles[$key]="$title"
+                  else
+                      titles[$key]="${titles[$key]}"$'\x1e'"$title"
+                  fi
+              fi
+          done < <(git log --first-parent --pretty='%H' "origin/${MAIN_BRANCH}..origin/${TARGET_BRANCH}")
+
+          sorted_keys=()
+          if [ "${#order[@]}" -gt 0 ]; then
+              while IFS= read -r k; do
+                  sorted_keys+=("$k")
+              done < <(
+                  for k in "${order[@]}"; do
+                      printf '%s\t%s\n' "${max_date[$k]}" "$k"
+                  done | sort -r -t $'\t' -k1,1 | cut -f2-
+              )
+          fi
+
+          {
+              echo "# Tasks on $(md_escape "${TARGET_BRANCH}")"
+              echo
+              echo "_Relative to \`origin/${MAIN_BRANCH}\`._"
+              echo
+              echo "| Ticket | Branch | Last merged | Titles |"
+              echo "|---|---|---|---|"
+
+              for key in "${sorted_keys[@]}"; do
+                  ticket="${key%%$'\x1f'*}"
+                  branch="${branch_of[$key]}"
+                  date="${max_date[$key]}"
+
+                  old_ifs="$IFS"
+                  IFS=$'\x1e'
+                  read -r -a title_arr <<< "${titles[$key]}"
+                  IFS="$old_ifs"
+                  titles_joined=""
+                  for t in "${title_arr[@]}"; do
+                      [ -n "$titles_joined" ] && titles_joined+="; "
+                      titles_joined+="$(md_escape "$t")"
+                  done
+
+                  echo "| $(md_escape "$ticket") | \`$(md_escape "$branch")\` | $(md_escape "$date") | $titles_joined |"
+              done
+
+              if [ "${#sorted_keys[@]}" -eq 0 ]; then
+                  echo "| _(nothing — \`${TARGET_BRANCH}\` has no commits not already in \`${MAIN_BRANCH}\`)_ | | | |"
+              fi
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,44 @@
+name: Check PR
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches: ['*']
+
+jobs:
+  # Лише перевірка назви PR — тестового pipeline в цього пакета немає, тож і checkout не потрібен
+  pr-title:
+    runs-on: self-hosted
+    steps:
+      - name: Check PR title format
+        env:
+          # Через env, а не ${{ }} прямо в скрипті — інакше заголовок PR
+          # підставляється в shell як код (script injection на self-hosted раннері)
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          echo "PR Title: $PR_TITLE"
+
+          # Підтримує: VSTK-2222, vstk-2222, VSTK 12345, vstk 12345 в будь-якій частині назви.
+          # ([^0-9]|$) після цифр — щоб VSTK-123456 не проходив як VSTK-12345
+          if [[ $PR_TITLE =~ [Vv][Ss][Tt][Kk][[:space:]-][0-9]{4,5}([^0-9]|$) ]]; then
+              echo "✅ PR title contains valid task ID"
+              TASK_ID=$(echo "$PR_TITLE" | grep -oE '[Vv][Ss][Tt][Kk][[:space:]-][0-9]{4,5}' | head -1)
+              echo "Found task ID: $TASK_ID"
+          else
+              echo "❌ PR title must contain task ID in format VSTK-XXXX or VSTK XXXX (4-5 digits)"
+              echo "Current title: '$PR_TITLE'"
+              echo ""
+              echo "Valid examples:"
+              echo "  ✅ VSTK-1234 Fix authentication bug"
+              echo "  ✅ VSTK 1234 Fix authentication bug"
+              echo "  ✅ Fix bug VSTK-1234"
+              echo "  ✅ Fix bug vstk 12345"
+              echo "  ✅ Feature/vstk-12345-new-feature"
+              echo "  ✅ vstk-1234: Update dependencies"
+              echo ""
+              echo "Invalid examples:"
+              echo "  ❌ Fix bug (no task ID)"
+              echo "  ❌ VSTK-123 Fix (only 3 digits)"
+              echo "  ❌ VSTK-123456 Fix (6 digits)"
+              echo "  ❌ VSTK1234 Fix (no separator)"
+              exit 1
+          fi
